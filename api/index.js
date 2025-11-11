@@ -348,14 +348,4 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log('\n🚀 AI Meme Generator Server Started!');
-  console.log(`📍 Running on: http://localhost:${PORT}`);
-  console.log(`📝 Using:`);
-  console.log(`   - Groq Llama 3.3 70B for AI captions (FREE)`);
-  console.log(`   - Memegen API for perfect meme generation (FREE)`);
-  console.log(`   - ${MEMEGEN_TEMPLATES.length} meme templates available`);
-  console.log('\n💰 Cost: $0.00 - Completely FREE!');
-  console.log('✨ Ready to generate perfect memes with professional text!\n');
-});
+module.exports = app;
