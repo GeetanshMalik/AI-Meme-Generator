@@ -5,6 +5,8 @@ const API_URL = process.env.NODE_ENV === 'production'
   ? '/api' 
   : 'http://localhost:3001';
 
+const MEME_COUNT = 3;
+
 export default function MemeGenerator() {
   const [topic, setTopic] = useState('');
   const [memes, setMemes] = useState([]);
@@ -13,7 +15,6 @@ export default function MemeGenerator() {
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
 
-  const MEME_COUNT = 3;
   useEffect(() => {
     loadHistory();
   }, []);
@@ -30,7 +31,6 @@ export default function MemeGenerator() {
     }
   };
 
-  const memes = Array(MEME_COUNT).fill(0);
   const generateMemes = async () => {
     if (!topic.trim()) {
       setError('Please enter a topic!');
@@ -46,7 +46,8 @@ export default function MemeGenerator() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          topic: topic.trim()
+          topic: topic.trim(),
+          count: MEME_COUNT
         })
       });
 
@@ -246,7 +247,7 @@ export default function MemeGenerator() {
                 AI is Creating Your Memes...
               </h3>
               <p className="text-gray-300">
-                Generating 3 unique memes about "{topic}"
+                Generating {MEME_COUNT} unique memes about "{topic}"
               </p>
               <p className="text-sm text-gray-400 mt-2">This may take 15-30 seconds</p>
             </div>
@@ -263,7 +264,7 @@ export default function MemeGenerator() {
                   <h2 className="text-3xl font-bold text-white mb-2">
                     Your AI Memes are Ready! 🎉
                   </h2>
-                  <p className="text-gray-300">Topic: <strong className="text-cyan-400">{topic}</strong> • Generated 3 unique memes</p>
+                  <p className="text-gray-300">Topic: <strong className="text-cyan-400">{topic}</strong> • Generated {MEME_COUNT} unique memes</p>
                 </div>
               </div>
 
