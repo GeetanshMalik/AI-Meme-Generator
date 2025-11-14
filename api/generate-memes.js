@@ -1,8 +1,6 @@
 const axios = require('axios');
 const Groq = require('groq-sdk');
-
-// In-memory storage (will reset on each deploy, but that's OK for Vercel)
-let memeHistory = [];
+const { kv } = require('@vercel/kv');
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
@@ -68,8 +66,6 @@ const MEMEGEN_TEMPLATES = [
 
 async function generateMemeWithMemegen(topic, template, index) {
   try {
-    console.log(`Generating ${template.boxes} captions with AI...`);
-    
     const completion = await Promise.race([
       groq.chat.completions.create({
         messages: [{
@@ -101,8 +97,6 @@ Topic: ${topic}`
     while (captions.length < template.boxes) {
       captions.push(topic);
     }
-
-    console.log(`Captions: ${captions.join(' | ')}`);
 
     const encodedCaptions = captions.map(text => {
       return encodeURIComponent(
@@ -152,7 +146,6 @@ Topic: ${topic}`
     };
 
   } catch (error) {
-    console.error(`Error: ${error.message}`);
     return {
       success: false,
       error: error.message
@@ -161,8 +154,6 @@ Topic: ${topic}`
 }
 
 async function generateFallbackMeme(topic, index) {
-  console.log(`Generating fallback meme...`);
-  
   try {
     const simpleTemplate = { id: 'buzz', name: 'Buzz Lightyear', boxes: 2 };
     const captions = [topic, 'Everywhere'];
@@ -187,8 +178,6 @@ async function generateFallbackMeme(topic, index) {
       index: index
     };
   } catch (error) {
-    console.error(`Fallback failed, using SVG`);
-    
     const svg = `<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
       <rect width="800" height="600" fill="#667eea"/>
       <text x="400" y="300" font-family="Impact" font-size="48" font-weight="bold" text-anchor="middle" fill="white" stroke="black" stroke-width="3">
@@ -211,7 +200,6 @@ async function generateFallbackMeme(topic, index) {
 }
 
 module.exports = async (req, res) => {
-  // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -234,7 +222,6 @@ module.exports = async (req, res) => {
     }
 
     const MEME_COUNT = 3;
-    console.log(`Generating ${MEME_COUNT} memes for topic: "${topic}"`);
 
     const successfulMemes = [];
     const shuffled = [...MEMEGEN_TEMPLATES].sort(() => Math.random() - 0.5);
@@ -248,10 +235,9 @@ module.exports = async (req, res) => {
         const meme = await generateMemeWithMemegen(topic, template, successfulMemes.length + 1);
         if (meme.success) {
           successfulMemes.push(meme);
-          console.log(`Success! (${successfulMemes.length}/${MEME_COUNT})`);
         }
       } catch (error) {
-        console.log(`Error: ${error.message}, trying next...`);
+        console.log(`Error: ${error.message}`);
       }
       
       attempts++;
@@ -273,8 +259,15 @@ module.exports = async (req, res) => {
       count: MEME_COUNT
     };
     
-    memeHistory.unshift(historyEntry);
-    if (memeHistory.length > 50) memeHistory = memeHistory.slice(0, 50);
+    // Save to Vercel KV
+    try {
+      const history = await kv.get('meme_history') || [];
+      history.unshift(historyEntry);
+      if (history.length > 50) history.length = 50;
+      await kv.set('meme_history', history);
+    } catch (kvError) {
+      console.log('KV storage not available, history will not persist');
+    }
 
     return res.status(200).json({
       success: true,
