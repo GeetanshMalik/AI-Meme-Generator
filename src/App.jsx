@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Download, Loader2, History, Trash2, Clock, ChevronRight } from 'lucide-react';
 
-const API_URL = process.env.NODE_ENV === 'production' 
-  ? '' 
-  : 'http://localhost:3001';
+const API_URL = '';
 
 const MEME_COUNT = 3;
 
