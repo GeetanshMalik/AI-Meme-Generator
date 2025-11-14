@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Download, Loader2, History, Trash2, Clock, ChevronRight } from 'lucide-react';
 
-const API_URL = '';
-
-const MEME_COUNT = 3;
+const API_URL = 'http://localhost:3001';
 
 export default function MemeGenerator() {
   const [topic, setTopic] = useState('');
@@ -13,6 +11,7 @@ export default function MemeGenerator() {
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
 
+  const MEME_COUNT = 3;
   useEffect(() => {
     loadHistory();
   }, []);
@@ -44,8 +43,7 @@ export default function MemeGenerator() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          topic: topic.trim(),
-          count: MEME_COUNT
+          topic: topic.trim()
         })
       });
 
@@ -245,7 +243,7 @@ export default function MemeGenerator() {
                 AI is Creating Your Memes...
               </h3>
               <p className="text-gray-300">
-                Generating {MEME_COUNT} unique memes about "{topic}"
+                Generating 3 unique memes about "{topic}"
               </p>
               <p className="text-sm text-gray-400 mt-2">This may take 15-30 seconds</p>
             </div>
@@ -262,7 +260,7 @@ export default function MemeGenerator() {
                   <h2 className="text-3xl font-bold text-white mb-2">
                     Your AI Memes are Ready! 🎉
                   </h2>
-                  <p className="text-gray-300">Topic: <strong className="text-cyan-400">{topic}</strong> • Generated {MEME_COUNT} unique memes</p>
+                  <p className="text-gray-300">Topic: <strong className="text-cyan-400">{topic}</strong> • Generated 3 unique memes</p>
                 </div>
               </div>
 
