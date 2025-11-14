@@ -1,3 +1,6 @@
+// server.js - AI Meme Generator with Memegen API (PERFECT TEXT!)
+// Install: npm install express cors dotenv groq-sdk axios
+
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
@@ -18,6 +21,7 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
 
+// 50+ Meme Templates from Memegen API
 const MEMEGEN_TEMPLATES = [
   { id: 'drake', name: 'Drake Hotline Bling', boxes: 2 },
   { id: 'distracted', name: 'Distracted Boyfriend', boxes: 3 },
@@ -76,7 +80,7 @@ const MEMEGEN_TEMPLATES = [
   { id: 'milk', name: 'Spilled Milk', boxes: 2 }
 ];
 
-// 3 unique memes with retry mechanism
+// Generate exactly 3 unique memes with retry mechanism
 app.post('/api/generate-memes', async (req, res) => {
   try {
     const { topic } = req.body;
@@ -91,8 +95,9 @@ app.post('/api/generate-memes', async (req, res) => {
     const successfulMemes = [];
     const shuffled = [...MEMEGEN_TEMPLATES].sort(() => Math.random() - 0.5);
     let attempts = 0;
-    const maxAttempts = 10; 
-    // Keep generating until exactly 3 successful memes
+    const maxAttempts = 10; // Try up to 10 different templates if needed
+
+    // Keep generating until we have exactly 3 successful memes
     while (successfulMemes.length < MEME_COUNT && attempts < maxAttempts) {
       const template = shuffled[attempts % shuffled.length];
       console.log(`  [${successfulMemes.length + 1}] Attempting with template: ${template.name}`);
@@ -137,7 +142,7 @@ app.post('/api/generate-memes', async (req, res) => {
 
     res.json({
       success: true,
-      memes: successfulMemes.slice(0, MEME_COUNT), 
+      memes: successfulMemes.slice(0, MEME_COUNT), // Guarantee exactly 3
       historyId: historyEntry.id
     });
 
@@ -181,7 +186,7 @@ Topic: ${topic}`
       .map(c => c.replace(/^["'\-*\d.]+\s*|["']$/g, '').trim())
       .slice(0, template.boxes);
     
-    // Ensure enough captions
+    // Ensure we have enough captions
     while (captions.length < template.boxes) {
       captions.push(topic);
     }
@@ -197,7 +202,7 @@ Topic: ${topic}`
           .replace(/%/g, '~p')
           .replace(/\//g, '~s')
           .replace(/#/g, '~h')
-          .substring(0, 100) 
+          .substring(0, 100) // Limit length
       );
     });
     
@@ -216,7 +221,7 @@ Topic: ${topic}`
             'User-Agent': 'Mozilla/5.0'
           }
         });
-        break; 
+        break; // Success
       } catch (err) {
         retries--;
         if (retries < 0) throw err;
@@ -253,7 +258,7 @@ async function generateFallbackMeme(topic, index) {
   console.log(`  [${index}] Generating fallback meme...`);
   
   try {
-    // Using simple, reliable template
+    // Use a simple, reliable template
     const simpleTemplate = { id: 'buzz', name: 'Buzz Lightyear', boxes: 2 };
     
     const captions = [topic, 'Everywhere'];
@@ -348,4 +353,14 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-module.exports = app;
+// Start server
+app.listen(PORT, () => {
+  console.log('\n🚀 AI Meme Generator Server Started!');
+  console.log(`📍 Running on: http://localhost:${PORT}`);
+  console.log(`📝 Using:`);
+  console.log(`   - Groq Llama 3.3 70B for AI captions (FREE)`);
+  console.log(`   - Memegen API for perfect meme generation (FREE)`);
+  console.log(`   - ${MEMEGEN_TEMPLATES.length} meme templates available`);
+  console.log('\n💰 Cost: $0.00 - Completely FREE!');
+  console.log('✨ Ready to generate perfect memes with professional text!\n');
+});
