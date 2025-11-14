@@ -1,11 +1,7 @@
-
 {
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "env": [
-    "GROQ_API_KEY"
-  ],
   "functions": {
     "api/**/*.js": {
       "maxDuration": 30
