@@ -30,6 +30,7 @@ export default function MemeGenerator() {
     }
   };
 
+  const memes = Array(MEME_COUNT).fill(0);
   const generateMemes = async () => {
     if (!topic.trim()) {
       setError('Please enter a topic!');
