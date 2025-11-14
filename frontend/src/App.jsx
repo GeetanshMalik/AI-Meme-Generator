@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Download, Loader2, History, Trash2, Clock, ChevronRight } from 'lucide-react';
 
-const API_URL = 'http://localhost:3001';
+const API_URL = 'https://ai-meme-generator-g18x.onrender.com';
 
 export default function MemeGenerator() {
   const [topic, setTopic] = useState('');
