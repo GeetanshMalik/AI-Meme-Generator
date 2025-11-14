@@ -5,6 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const Groq = require('groq-sdk');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -80,6 +81,9 @@ const MEMEGEN_TEMPLATES = [
   { id: 'milk', name: 'Spilled Milk', boxes: 2 }
 ];
 
+// ===== SERVE REACT BUILD =====
+app.use(express.static(path.join(__dirname, '../frontend/build')));
+
 // Generate exactly 3 unique memes with retry mechanism
 app.post('/api/generate-memes', async (req, res) => {
   try {
@@ -95,9 +99,8 @@ app.post('/api/generate-memes', async (req, res) => {
     const successfulMemes = [];
     const shuffled = [...MEMEGEN_TEMPLATES].sort(() => Math.random() - 0.5);
     let attempts = 0;
-    const maxAttempts = 10; // Try up to 10 different templates if needed
+    const maxAttempts = 10;
 
-    // Keep generating until we have exactly 3 successful memes
     while (successfulMemes.length < MEME_COUNT && attempts < maxAttempts) {
       const template = shuffled[attempts % shuffled.length];
       console.log(`  [${successfulMemes.length + 1}] Attempting with template: ${template.name}`);
@@ -123,7 +126,6 @@ app.post('/api/generate-memes', async (req, res) => {
       throw new Error('Failed to generate any memes after multiple attempts.');
     }
 
-    // Pad with simple fallback memes if we don't have 3
     while (successfulMemes.length < MEME_COUNT) {
       console.log(`  Adding fallback meme ${successfulMemes.length + 1}...`);
       successfulMemes.push(await generateFallbackMeme(topic, successfulMemes.length + 1));
@@ -132,7 +134,7 @@ app.post('/api/generate-memes', async (req, res) => {
     const historyEntry = {
       id: Date.now().toString(),
       topic: topic,
-      memes: successfulMemes.slice(0, MEME_COUNT), // Ensure exactly 3
+      memes: successfulMemes.slice(0, MEME_COUNT),
       timestamp: new Date().toISOString(),
       count: MEME_COUNT
     };
@@ -142,7 +144,7 @@ app.post('/api/generate-memes', async (req, res) => {
 
     res.json({
       success: true,
-      memes: successfulMemes.slice(0, MEME_COUNT), // Guarantee exactly 3
+      memes: successfulMemes.slice(0, MEME_COUNT),
       historyId: historyEntry.id
     });
 
@@ -152,12 +154,10 @@ app.post('/api/generate-memes', async (req, res) => {
   }
 });
 
-// Generate single meme using Memegen API with better error handling
 async function generateMemeWithMemegen(topic, template, index) {
   try {
     console.log(`  [${index}] Generating ${template.boxes} captions with AI...`);
     
-    // Generate captions with Groq AI - with timeout
     const completion = await Promise.race([
       groq.chat.completions.create({
         messages: [{
@@ -186,14 +186,12 @@ Topic: ${topic}`
       .map(c => c.replace(/^["'\-*\d.]+\s*|["']$/g, '').trim())
       .slice(0, template.boxes);
     
-    // Ensure we have enough captions
     while (captions.length < template.boxes) {
       captions.push(topic);
     }
 
     console.log(`  [${index}] Captions: ${captions.join(' | ')}`);
 
-    // Build Memegen URL with better encoding
     const encodedCaptions = captions.map(text => {
       return encodeURIComponent(
         text
@@ -202,13 +200,12 @@ Topic: ${topic}`
           .replace(/%/g, '~p')
           .replace(/\//g, '~s')
           .replace(/#/g, '~h')
-          .substring(0, 100) // Limit length
+          .substring(0, 100)
       );
     });
     
     const memegenUrl = `https://api.memegen.link/images/${template.id}/${encodedCaptions.join('/')}.png`;
 
-    // Download meme with retry
     let response;
     let retries = 2;
     
@@ -221,7 +218,7 @@ Topic: ${topic}`
             'User-Agent': 'Mozilla/5.0'
           }
         });
-        break; // Success
+        break;
       } catch (err) {
         retries--;
         if (retries < 0) throw err;
@@ -230,7 +227,6 @@ Topic: ${topic}`
       }
     }
 
-    // Convert to base64
     const imageBuffer = Buffer.from(response.data);
     const imageBase64 = `data:image/png;base64,${imageBuffer.toString('base64')}`;
 
@@ -253,12 +249,10 @@ Topic: ${topic}`
   }
 }
 
-// Fallback meme generator if Memegen fails
 async function generateFallbackMeme(topic, index) {
   console.log(`  [${index}] Generating fallback meme...`);
   
   try {
-    // Use a simple, reliable template
     const simpleTemplate = { id: 'buzz', name: 'Buzz Lightyear', boxes: 2 };
     
     const captions = [topic, 'Everywhere'];
@@ -285,7 +279,6 @@ async function generateFallbackMeme(topic, index) {
   } catch (error) {
     console.error(`  [${index}] Fallback also failed, using placeholder`);
     
-    // Ultimate fallback - simple SVG
     const svg = `<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
       <rect width="800" height="600" fill="#667eea"/>
       <text x="400" y="300" font-family="Impact" font-size="48" font-weight="bold" text-anchor="middle" fill="white" stroke="black" stroke-width="3">
@@ -307,7 +300,6 @@ async function generateFallbackMeme(topic, index) {
   }
 }
 
-// Get meme history
 app.get('/api/history', (req, res) => {
   res.json({
     success: true,
@@ -316,7 +308,6 @@ app.get('/api/history', (req, res) => {
   });
 });
 
-// Get specific meme by ID
 app.get('/api/history/:id', (req, res) => {
   const { id } = req.params;
   const entry = memeHistory.find(h => h.id === id);
@@ -328,7 +319,6 @@ app.get('/api/history/:id', (req, res) => {
   }
 });
 
-// Delete meme from history
 app.delete('/api/history/:id', (req, res) => {
   const { id } = req.params;
   const index = memeHistory.findIndex(h => h.id === id);
@@ -341,7 +331,6 @@ app.delete('/api/history/:id', (req, res) => {
   }
 });
 
-// Health check
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -353,7 +342,11 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Start server
+// ===== HANDLE ALL OTHER ROUTES - SERVE REACT INDEX.HTML =====
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+});
+
 app.listen(PORT, () => {
   console.log('\n🚀 AI Meme Generator Server Started!');
   console.log(`📍 Running on: http://localhost:${PORT}`);
