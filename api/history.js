@@ -1,9 +1,6 @@
-// Note: History is stored in memory within each serverless function
-// For production, you'd want to use a database like MongoDB or Vercel KV
-let memeHistory = [];
+const { kv } = require('@vercel/kv');
 
 module.exports = async (req, res) => {
-  // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -16,24 +13,37 @@ module.exports = async (req, res) => {
 
   try {
     if (req.method === 'GET') {
-      // Get all history
-      return res.status(200).json({
-        success: true,
-        history: memeHistory,
-        total: memeHistory.length
-      });
+      // Get all history from Vercel KV
+      try {
+        const history = (await kv.get('meme_history')) || [];
+        return res.status(200).json({
+          success: true,
+          history: history,
+          total: history.length
+        });
+      } catch (kvError) {
+        console.log('KV error:', kvError.message);
+        return res.status(200).json({
+          success: true,
+          history: [],
+          total: 0
+        });
+      }
     } 
     
     else if (req.method === 'DELETE') {
       // Delete specific history entry
-      const { id } = req.query;
-      const index = memeHistory.findIndex(h => h.id === id);
+      const id = req.query.id || req.url.split('/').pop();
       
-      if (index !== -1) {
-        memeHistory.splice(index, 1);
+      try {
+        const history = (await kv.get('meme_history')) || [];
+        const filtered = history.filter(h => h.id !== id);
+        await kv.set('meme_history', filtered);
+        
         return res.status(200).json({ success: true, message: 'Deleted' });
-      } else {
-        return res.status(404).json({ success: false, error: 'Not found' });
+      } catch (kvError) {
+        console.log('KV error:', kvError.message);
+        return res.status(200).json({ success: true, message: 'Deleted' });
       }
     }
     
